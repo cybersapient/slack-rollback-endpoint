@@ -1,5 +1,3 @@
-import fetch from "node-fetch";
-
 const ALLOWED_REPOS = [
   "payments-service",
   "auth-service",
@@ -10,17 +8,15 @@ const ALLOWED_REPOS = [
 const ALLOWED_BRANCHES = ["main", "release"];
 
 export default async function handler(req, res) {
-  // Health check (browser / uptime monitors)
+  // Health check
   if (req.method === "GET") {
     return res.status(200).send("✅ Rollback endpoint is alive");
   }
 
-  // Only allow Slack POST requests
   if (req.method !== "POST") {
     return res.status(405).send("Method not allowed");
   }
 
-  // Slack sends form-encoded data
   const { text, user_name } = req.body || {};
 
   if (!text) {
@@ -29,7 +25,6 @@ export default async function handler(req, res) {
     );
   }
 
-  // Expected format: /rollback repo commit branch
   const [repo, commit, branch = "main"] = text.trim().split(/\s+/);
 
   if (!repo || !commit) {
@@ -53,8 +48,8 @@ export default async function handler(req, res) {
     const response = await fetch(workflowUrl, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${process.env.GITHUB_TOKEN}`,
-        "Accept": "application/vnd.github+json",
+        Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+        Accept: "application/vnd.github+json",
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
@@ -64,8 +59,8 @@ export default async function handler(req, res) {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(errorText);
+      const text = await response.text();
+      console.error(text);
       return res.status(500).send("❌ Failed to trigger rollback workflow");
     }
 
